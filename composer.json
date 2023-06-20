@@ -1,0 +1,28 @@
+{
+    "name": "dfumagalli/getresponse",
+    "description": "A Laravel 10+ wrapper for the GetResponse API",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Dario Fumagalli",
+            "email": "dfumagalli71@gmail.com"
+        }
+    ],
+    "require": {
+        "getresponse/sdk-php": "^3.0"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Dfumagalli\\Getresponse\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Dfumagalli\\Getresponse\\GetResponseServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable"
+}
