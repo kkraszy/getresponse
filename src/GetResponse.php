@@ -10,6 +10,7 @@ use Getresponse\Sdk\Client\Operation\OperationResponse;
 use Getresponse\Sdk\Client\Operation\QueryOperation;
 use Getresponse\Sdk\Client\Operation\Pagination;
 use Getresponse\Sdk\Operation\Campaigns\CreateCampaign\CreateCampaign;
+use Getresponse\Sdk\Operation\Contacts\CreateContact\CreateContact;
 use Getresponse\Sdk\Operation\Contacts\GetContact\GetContact;
 use Getresponse\Sdk\Operation\Contacts\GetContact\GetContactFields;
 use Getresponse\Sdk\Operation\Contacts\GetContacts\GetContactsAdditionalFlags;
@@ -28,9 +29,12 @@ use Getresponse\Sdk\Operation\CustomFields\GetCustomFields\GetCustomFieldsFields
 use Getresponse\Sdk\Operation\CustomFields\GetCustomFields\GetCustomFields;
 use Getresponse\Sdk\Operation\CustomFields\GetCustomFields\GetCustomFieldsSearchQuery;
 use Getresponse\Sdk\Operation\CustomFields\GetCustomFields\GetCustomFieldsSortParams;
+use Getresponse\Sdk\Operation\Model\CampaignReference;
 use Getresponse\Sdk\Operation\Model\NewCampaign;
 use Getresponse\Sdk\Operation\Model\CampaignOptinTypes;
 use Getresponse\Sdk\Operation\Model\CampaignProfile;
+use Getresponse\Sdk\Operation\Model\NewContact;
+use Getresponse\Sdk\Operation\Model\NewContactCustomFieldValue;
 use Getresponse\Sdk\Operation\Tags\GetTag\GetTag;
 use Getresponse\Sdk\Operation\Tags\GetTag\GetTagFields;
 use Getresponse\Sdk\Operation\Tags\GetTags\GetTags;
@@ -212,7 +216,7 @@ class GetResponse
      * @param CampaignProfile $campaignProfile Campaign profile
      * @param CampaignOptinTypes|null $optinTypes Campaign optin types. Null = all optin types are set to 'single'
      *
-     * @return array|false New campaign data or false on error
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
      * @throws MalformedResponseDataException
      */
     public function createCampaign(
@@ -234,9 +238,8 @@ class GetResponse
         $newCampaign->setOptinTypes($optinTypes);
         $newCampaign->setProfile($campaignProfile);
         $createCampaignOperation = new CreateCampaign($newCampaign);
-        $response = $client->call($createCampaignOperation);
 
-        return $response->isSuccess() ? $response->getData() : false;
+        return $client->call($createCampaignOperation);
     }
 
     /**
@@ -361,6 +364,62 @@ class GetResponse
     }
 
     /**
+     * Create a new contact, with optional custom fields and tags
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $campaignId Campaign id, as returned by @getCampaigns()
+     * @param string $name Contact name
+     * @param string $emailAddress Contact email address
+     * @param int|null $dayOfCycle Contact autoresponder day of cycle. Null = not in the cycle
+     * @param float|null $scoring Contact scoring. Null = contact with no score.
+     * @param string $ipAddress Contact IP address. Must pass a valid, non local address
+     * @param array $tags Contact array of tags. Empty array = no tags
+     * @param array $customFieldValues Contact array of custom fields. Empty array = no custom fields
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     * @throws MalformedResponseDataException
+    */
+    public function createContact(
+        GetresponseClient $client,
+        string $campaignId,
+        string $name,
+        string $emailAddress,
+        ?int $dayOfCycle = null,
+        ?float $scoring = null, // N.B. only supported by advanced GetResponse accounts! If not, error 400 is returned.
+        string $ipAddress = '',
+        array $tags = [],
+        array $customFieldValues = []
+    ) {
+        $newContact = new NewContact(
+            new CampaignReference($campaignId),
+            $emailAddress
+        );
+
+        $newContact->setName($name);
+
+        if ($dayOfCycle !== null) {
+            $newContact->setDayOfCycle($dayOfCycle);
+        }
+
+        if ($scoring !== null) {
+            $newContact->setScoring($scoring);
+        }
+
+        $newContact->setIpAddress($ipAddress);
+
+        if (!empty($tags)) {
+            $newContact->setTags($tags);
+        }
+
+        if (!empty($customFieldValues)) {
+            $newContact->setCustomFieldValues($customFieldValues);
+        }
+
+        $createContact = new CreateContact($newContact);
+        return $client->call($createContact);
+    }
+
+    /**
      * Get the list of custom fields matching the given query and parameters
      *
      * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
@@ -368,6 +427,7 @@ class GetResponse
      * @param GetCustomFieldsSortParams|null $sort Optional custom fields sort order
      * @param int $fieldsPerPage How many custom fields to fetch per paginated request
      * @param array $fieldsToGet Array of fields names to get. Pass an empty array to fetch all the fields
+     *
      * @return array List of custom fields stored on GetResponse
      * @throws MalformedResponseDataException
      */
