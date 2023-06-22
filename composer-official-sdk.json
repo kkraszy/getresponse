@@ -8,20 +8,10 @@
             "email": "dfumagalli71@gmail.com"
         }
     ],
-    "license": "MIT",
-    "repositories": [
-        {
-            "url": "https://github.com/b2bcenter/sdk-php.git",
-            "type": "git"
-        },
-        {
-            "url": "https://github.com/b2bcenter/sdk-php-client.git",
-            "type": "git"
-        }
-    ],
     "require": {
-        "b2bcenter/sdk-php": "2.0.3"
+        "getresponse/sdk-php": "^3.0"
     },
+    "license": "MIT",
     "autoload": {
         "psr-4": {
             "Dfumagalli\\Getresponse\\": "src/"

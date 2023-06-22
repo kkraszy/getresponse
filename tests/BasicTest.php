@@ -20,6 +20,7 @@ class BasicTest extends TestCase
 {
     use CreatesApplication;
     public const UNIT_TEST_CAMPAIGN_ID = 'MDct2';
+    public const UNIT_TEST_CONTACT_NAME = 'DF Test';
     public const UNIT_TEST_TAG_ID = 'Vumth'; // "unit_test"
     public const UNIT_TEST_CUSTOM_FIELD_1_ID = 'VZSuSU'; // Birth date
     public const UNIT_TEST_CUSTOM_FIELD_2_ID = 'VZSuvt'; // City
@@ -130,7 +131,7 @@ class BasicTest extends TestCase
         $this->assertGreaterThan(1, $finalPage);
 
         $query = new GetContactsSearchQuery();
-        $query->whereName('Luca Ferraccioli');
+        $query->whereName(static::UNIT_TEST_CONTACT_NAME);
         $sort = new GetContactsSortParams();
         $sort->sortAscBy('name');
         $responseUnsplitPaginatedDataAsArray = $getResponse->getContacts($client, $query, $sort);
@@ -166,7 +167,7 @@ class BasicTest extends TestCase
      */
     public function test_create_campaign()
     {
-        // $this->markTestSkipped('Only enable to check campaign creation.');
+        $this->markTestSkipped('Only enable to check campaign creation.');
         return static::UNIT_TEST_CAMPAIGN_ID;
         /*
         $getResponse = GetResponse::forcePersonalAndAPIKey();
