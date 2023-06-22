@@ -11,16 +11,16 @@
     "license": "MIT",
     "repositories": [
         {
-            "url": "https://github.com/b2bcenter/sdk-php.git",
+            "url": "https://github.com/dfumagalli/sdk-php.git",
             "type": "git"
         },
         {
-            "url": "https://github.com/b2bcenter/sdk-php-client.git",
+            "url": "https://github.com/dfumagalli/sdk-php-client.git",
             "type": "git"
         }
     ],
     "require": {
-        "b2bcenter/sdk-php": "2.0.3"
+        "dfumagalli/sdk-php": "^2.0"
     },
     "autoload": {
         "psr-4": {
