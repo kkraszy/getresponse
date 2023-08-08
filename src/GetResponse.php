@@ -23,6 +23,7 @@ use Getresponse\Sdk\Operation\Campaigns\GetCampaign\GetCampaign;
 use Getresponse\Sdk\Operation\Campaigns\GetCampaigns\GetCampaigns;
 use Getresponse\Sdk\Operation\Contacts\GetContacts\GetContacts;
 use Getresponse\Sdk\Operation\Contacts\GetContacts\GetContactsFields;
+use Getresponse\Sdk\Operation\Contacts\UpdateContact\UpdateContact;
 use Getresponse\Sdk\Operation\CustomFields\GetCustomField\GetCustomField;
 use Getresponse\Sdk\Operation\CustomFields\GetCustomField\GetCustomFieldFields;
 use Getresponse\Sdk\Operation\CustomFields\GetCustomFields\GetCustomFieldsFields;
@@ -35,6 +36,10 @@ use Getresponse\Sdk\Operation\Model\CampaignOptinTypes;
 use Getresponse\Sdk\Operation\Model\CampaignProfile;
 use Getresponse\Sdk\Operation\Model\NewContact;
 use Getresponse\Sdk\Operation\Model\NewContactCustomFieldValue;
+use Getresponse\Sdk\Operation\Model\NewContactTag;
+use Getresponse\Sdk\Operation\Model\NewTag;
+use Getresponse\Sdk\Operation\Tags\CreateTag\CreateTag;
+use Getresponse\Sdk\Operation\Tags\DeleteTag\DeleteTag;
 use Getresponse\Sdk\Operation\Tags\GetTag\GetTag;
 use Getresponse\Sdk\Operation\Tags\GetTag\GetTagFields;
 use Getresponse\Sdk\Operation\Tags\GetTags\GetTags;
@@ -344,12 +349,12 @@ class GetResponse
      * Get information about a contact, given its contact id
      *
      * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
-     * @param string $ContactId Contact id, possibly fetched by @getContacts()
+     * @param string $contactId Contact id, possibly fetched by @getContacts()
      * @param array $fieldsToGet Array of fields names to get. Pass an empty array to fetch all the fields
      *
      * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
      */
-    public function getContact(GetresponseClient $client, string $ContactId, array $fieldsToGet = []): OperationResponse
+    public function getContact(GetresponseClient $client, string $contactId, array $fieldsToGet = []): OperationResponse
     {
         if (empty($fieldsToGet)) {
             $fieldsToGet = (new GetContactFields())->getAllowedValues();
@@ -357,7 +362,7 @@ class GetResponse
 
         $contactFields = new GetContactFields(...$fieldsToGet);
 
-        $contactOperation = new GetContact($ContactId);
+        $contactOperation = new GetContact($contactId);
         $contactOperation->setFields($contactFields);
 
         return $client->call($contactOperation);
@@ -373,8 +378,8 @@ class GetResponse
      * @param int|null $dayOfCycle Contact autoresponder day of cycle. Null = not in the cycle
      * @param float|null $scoring Contact scoring. Null = contact with no score.
      * @param string $ipAddress Contact IP address. Must pass a valid, non local address
-     * @param array $tags Contact array of tags. Empty array = no tags
-     * @param array $customFieldValues Contact array of custom fields. Empty array = no custom fields
+     * @param array $tagsIds Contact array of tags ids (tags must exist already). Empty array = no tags
+     * @param array $customFieldsIdsAndValues Contact array of custom fields. Empty array = no custom fields
      *
      * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
      * @throws MalformedResponseDataException
@@ -387,8 +392,8 @@ class GetResponse
         ?int $dayOfCycle = null,
         ?float $scoring = null, // N.B. only supported by advanced GetResponse accounts! If not, error 400 is returned.
         string $ipAddress = '',
-        array $tags = [],
-        array $customFieldValues = []
+        array $tagsIds = [],
+        array $customFieldsIdsAndValues = []
     ) {
         $newContact = new NewContact(
             new CampaignReference($campaignId),
@@ -407,16 +412,135 @@ class GetResponse
 
         $newContact->setIpAddress($ipAddress);
 
-        if (!empty($tags)) {
-            $newContact->setTags($tags);
+        if (!empty($tagsIds)) {
+            foreach ($tagsIds as $tagId) {
+                $tagsCollection[] = new NewContactTag($tagId);
+            }
+
+            $newContact->setTags($tagsCollection);
         }
 
-        if (!empty($customFieldValues)) {
-            $newContact->setCustomFieldValues($customFieldValues);
+        if (!empty($customFieldsIdsAndValues)) {
+            foreach ($customFieldsIdsAndValues as $customFieldsIdsAndValue) {
+                $customFieldsCollection[] = new NewContactCustomFieldValue(
+                    $customFieldsIdsAndValue['customFieldId'],
+                    $customFieldsIdsAndValue['values']
+                );
+            }
+
+            $newContact->setCustomFieldValues($customFieldsCollection);
         }
 
-        $createContact = new CreateContact($newContact);
-        return $client->call($createContact);
+        $createContactOperation = new CreateContact($newContact);
+        return $client->call($createContactOperation);
+    }
+
+    /**
+     * Update a contact, given its id, with optional custom fields and tags
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $contactId Contact id, possibly fetched by @getContacts()
+     * @param string $campaignId Campaign id, as returned by @getCampaigns(). If not empty, assign to new campaign
+     * @param string $name Contact name
+     * @param string $emailAddress Contact email address
+     * @param int|null $dayOfCycle Contact autoresponder day of cycle. Null = not in the cycle
+     * @param float|null $scoring Contact scoring. Null = contact with no score.
+     * @param array $tagsIds Contact array of tags ids (tags must exist already). Empty array = no tags
+     * @param array $customFieldsIdsAndValues Contact array of custom fields. Empty array = no custom fields
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     * @throws MalformedResponseDataException
+     */
+    public function updateContact(
+        GetresponseClient $client,
+        string $contactId,
+        string $campaignId = '',
+        string $name = '',
+        string $emailAddress = '',
+        ?int $dayOfCycle = null,
+        ?float $scoring = null, // N.B. only supported by advanced GetResponse accounts! If not, error 400 is returned.
+        array $tagsIds = [],
+        array $customFieldsIdsAndValues = []
+    ) {
+        $updateContact = new \Getresponse\Sdk\Operation\Model\UpdateContact();
+
+        if (!empty($campaignId)) {
+            $campaignReference = new CampaignReference($campaignId);
+            $updateContact->setCampaign($campaignReference);
+        }
+
+        if (!empty($name)) {
+            $updateContact->setName($name);
+        }
+
+        if (!empty($emailAddress)) {
+            $updateContact->setEmail($emailAddress);
+        }
+
+        if ($dayOfCycle !== null) {
+            $updateContact->setDayOfCycle($dayOfCycle);
+        }
+
+        if ($scoring !== null) {
+            $updateContact->setScoring($scoring);
+        }
+
+        if (!empty($tagsIds)) {
+            foreach ($tagsIds as $tagId) {
+                $tagsCollection[] = new NewContactTag($tagId);
+            }
+
+            $updateContact->setTags($tagsCollection);
+        }
+
+        if (!empty($customFieldsIdsAndValues)) {
+            foreach ($customFieldsIdsAndValues as $customFieldsIdsAndValue) {
+                $customFieldsCollection[] = new NewContactCustomFieldValue(
+                    $customFieldsIdsAndValue['customFieldId'],
+                    $customFieldsIdsAndValue['values']
+                );
+            }
+
+            $updateContact->setCustomFieldValues($customFieldsCollection);
+        }
+
+        $updateContactOperation = new UpdateContact($updateContact, $contactId);
+        return $client->call($updateContactOperation);
+    }
+
+    /**
+     * Create a new tag
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $name Tag name
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     */
+    public function createTag(
+        GetresponseClient $client,
+        string $name
+    ) {
+        $newTag = new NewTag($name);
+
+        $createTag = new CreateTag($newTag);
+        return $client->call($createTag);
+    }
+
+    /**
+     * Delete a tag given its id
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $tagId Tag id
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     * @throws MalformedResponseDataException
+     */
+    public function deleteTag(
+        GetresponseClient $client,
+        string $tagId
+    ) {
+        $deleteTag = new DeleteTag($tagId);
+        return $client->call($deleteTag);
     }
 
     /**

@@ -24,6 +24,9 @@ class BasicTest extends TestCase
     public const UNIT_TEST_TAG_ID = 'Vumth'; // "unit_test"
     public const UNIT_TEST_CUSTOM_FIELD_1_ID = 'VZSuSU'; // Birth date
     public const UNIT_TEST_CUSTOM_FIELD_2_ID = 'VZSuvt'; // City
+    public const UNIT_TEST_CUSTOM_FIELD_3_ID = 'VZSuUu'; // Country
+    public const UNIT_TEST_CUSTOM_FIELD_4_ID = 'VZSudG'; // Gender
+    public const UNIT_TEST_UPDATE_CONTACT_ID = 'Vyv1tui'; // Unit test update contact
 
     public function test_facade()
     {
@@ -167,7 +170,7 @@ class BasicTest extends TestCase
      */
     public function test_create_campaign()
     {
-        $this->markTestSkipped('Only enable to check campaign creation.');
+        // $this->markTestSkipped('Only enable to check campaign creation.');
         return static::UNIT_TEST_CAMPAIGN_ID;
         /*
         $getResponse = GetResponse::forcePersonalAndAPIKey();
@@ -277,6 +280,25 @@ class BasicTest extends TestCase
         $getResponse = GetResponse::forcePersonalAndAPIKey();
         $client = $getResponse->newGetresponseClient();
 
+        // Create a tag, if it does not exist
+        $tagName = 'test_create_contact';
+        $responseUnsplitPaginatedDataAsArray = $getResponse->getTags($client);
+        $tagId = '';
+
+        foreach ($responseUnsplitPaginatedDataAsArray as $tag) {
+            if ($tag['name'] === $tagName) {
+                $tagId = $tag['tagId'];
+                break;
+            }
+        }
+
+        // Tag not found, create it
+        if (empty($tagId)) {
+            $response = $getResponse->createTag($client, $tagName);
+            $this->assertTrue($response->isSuccess());
+            $tagId = $response->getData()['tagId'];
+        }
+
         // Basic contact, no data
         $response = $getResponse->createContact(
             $client,
@@ -293,33 +315,92 @@ class BasicTest extends TestCase
 
         // Contact with a tag and custom fields
         $tags = [
-            new NewContactTag(static::UNIT_TEST_TAG_ID)
+            $tagId
         ];
 
         $customFields = [
-            new NewContactCustomFieldValue(
-                static::UNIT_TEST_CUSTOM_FIELD_1_ID, // Birth date
-                ['1971-06-18']
-            ),
-            new NewContactCustomFieldValue(
-                static::UNIT_TEST_CUSTOM_FIELD_2_ID, // City
-                ['Toronto']
-            ),
+            ['customFieldId' => static::UNIT_TEST_CUSTOM_FIELD_1_ID, 'values' => ['1971-06-18']], // Birthdate
+            ['customFieldId' => static::UNIT_TEST_CUSTOM_FIELD_2_ID, 'values' => ['Toronto']], // City
+            ['customFieldId' => static::UNIT_TEST_CUSTOM_FIELD_3_ID, 'values' => ['Italia']], // Country
         ];
 
         $response = $getResponse->createContact(
             $client,
             $campaignId,
             'DF Test',
-            'df@test.it',
+            'df' . rand(0, 9999) . '@test.it',
             0,
             null,
-            $ipAddress = '156.54.69.9',
+            $ipAddress = '156.54.69.' . rand(0, 255),
             $tags,
             $customFields
         );
 
+        if (!$response->isSuccess()) {
+            $this->assertNotEmpty($response->getData());
+        }
+
         $this->assertTrue($response->isSuccess());
-        // var_dump($response->getData());
+    }
+
+    /**
+     * @depends test_create_campaign
+     *
+     * @throws InvalidDomainException
+     * @throws MalformedResponseDataException
+     */
+    public function test_update_contact(string $campaignId)
+    {
+        $getResponse = GetResponse::forcePersonalAndAPIKey();
+        $client = $getResponse->newGetresponseClient();
+
+        // Create a tag, if it does not exist
+        $tagName = 'test_update_contact';
+        $responseUnsplitPaginatedDataAsArray = $getResponse->getTags($client);
+        $tagId = '';
+
+        foreach ($responseUnsplitPaginatedDataAsArray as $tag) {
+            if ($tag['name'] === $tagName) {
+                $tagId = $tag['tagId'];
+                break;
+            }
+        }
+
+        // Tag not found, create it
+        if (empty($tagId)) {
+            $response = $getResponse->createTag($client, $tagName);
+            $this->assertTrue($response->isSuccess());
+            $tagId = $response->getData()['tagId'];
+        }
+
+        // Contact with a tag and custom fields
+        $tags = [
+            $tagId
+        ];
+
+        $customFields = [
+            ['customFieldId' => static::UNIT_TEST_CUSTOM_FIELD_1_ID, 'values' => ['1971-06-19']], // Birthdate
+            ['customFieldId' => static::UNIT_TEST_CUSTOM_FIELD_2_ID, 'values' => ['Roma']], // City
+            ['customFieldId' => static::UNIT_TEST_CUSTOM_FIELD_3_ID, 'values' => ['Italy']], // Country
+            ['customFieldId' => static::UNIT_TEST_CUSTOM_FIELD_4_ID, 'values' => ['Male']] // Gender
+        ];
+
+        $response = $getResponse->updateContact(
+            $client,
+            static::UNIT_TEST_UPDATE_CONTACT_ID,
+            $campaignId,
+            'DF Test',
+            'unitTestUpdate@gmail.com',
+            0,
+            null,
+            $tags,
+            $customFields
+        );
+
+        if (!$response->isSuccess()) {
+            $this->assertNotEmpty($response->getData());
+        }
+
+        $this->assertTrue($response->isSuccess());
     }
 }
