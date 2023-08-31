@@ -810,7 +810,7 @@ class GetResponse
 
         $createNewsletter->setReplyTo(new FromFieldReference($contactReplyToId));
 
-        if (!empty($newsletterAttachment)) {
+        if (!empty($newsletterAttachments)) {
             $createNewsletter->setAttachments($newsletterAttachments);
         }
 

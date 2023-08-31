@@ -13,6 +13,7 @@ use Getresponse\Sdk\Operation\FromFields\GetFromFields\GetFromFieldsSearchQuery;
 use Getresponse\Sdk\Operation\Model\CampaignProfile;
 use Getresponse\Sdk\Operation\Model\NewContactCustomFieldValue;
 use Getresponse\Sdk\Operation\Model\NewContactTag;
+use Getresponse\Sdk\Operation\Model\NewsletterAttachment;
 use Getresponse\Sdk\Operation\Model\NewsletterSendSettings;
 use Getresponse\Sdk\Operation\Newsletters\GetNewsletters\GetNewslettersSearchQuery;
 use Getresponse\Sdk\Operation\Newsletters\GetNewsletters\GetNewslettersSortParams;
@@ -64,7 +65,7 @@ class NewsletterTest extends TestCase
         $fromFieldId = $responseUnsplitPaginatedDataAsArray[0]['fromFieldId'];
 
         // If there are 2+ from fields, use another as reply to field
-        if ($this->count($responseUnsplitPaginatedDataAsArray) > 1) {
+        if (count($responseUnsplitPaginatedDataAsArray) > 1) {
             $replyToFieldId = $responseUnsplitPaginatedDataAsArray[1]['fromFieldId'];
         } else {
             $replyToFieldId = $fromFieldId;
@@ -80,6 +81,14 @@ class NewsletterTest extends TestCase
             self::UNIT_TEST_NEWSLETTER_CONTACT_04_ID
         ]);
 
+        // Newsletter attachments are optional. If not used, just pass "[]" or omit the parameter in the API call
+        $newsletterAttachment = new NewsletterAttachment();
+
+        // Attachment contents must be Base 64 encoded and not exceed 400KB in size.
+        $newsletterAttachment->setContent('VW5pdCB0ZXN0IHRleHQgZmlsZS4='); // "Unit test text file."
+        $newsletterAttachment->setFileName('test.txt');
+        $newsletterAttachment->setMimeType('text/plain');
+
         $response = $getResponse->createNewsletter(
             $client,
             self::UNIT_TEST_CAMPAIGN_NEWSLETTER_ID,
@@ -91,7 +100,8 @@ class NewsletterTest extends TestCase
             '<p>HTML content</p>',
             null,
             $newsletterSendSettings,
-            ''
+            '', // Check API reference for the exact kind of date / time strings accepted
+            [ $newsletterAttachment ]
         );
 
         if (!$response->isSuccess()) {
@@ -122,7 +132,7 @@ class NewsletterTest extends TestCase
         $sort = new GetNewslettersSortParams();
         $sort->sortAscBy('createdOn');
         $responseUnsplitPaginatedDataAsArray = $getResponse->getNewsletters($client, $query, $sort);
-        self::assertGreaterThan(0, $this->count($responseUnsplitPaginatedDataAsArray));
+        self::assertGreaterThan(0, count($responseUnsplitPaginatedDataAsArray));
 
         $this->assertStringContainsString('https://api.getresponse.com/v3/newsletters', $responseUnsplitPaginatedDataAsArray[0]['href']);
         return $responseUnsplitPaginatedDataAsArray;
