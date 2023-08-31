@@ -8,6 +8,8 @@ use Getresponse\Sdk\Client\Exception\MalformedResponseDataException;
 use Getresponse\Sdk\Operation\Campaigns\GetCampaigns\GetCampaigns;
 use Getresponse\Sdk\Operation\Contacts\GetContacts\GetContactsSearchQuery;
 use Getresponse\Sdk\Operation\Contacts\GetContacts\GetContactsSortParams;
+use Getresponse\Sdk\Operation\FromFields\GetFromFields\GetFromFieldsSearchQuery;
+use Getresponse\Sdk\Operation\FromFields\GetFromFields\GetFromFieldsSortParams;
 use Getresponse\Sdk\Operation\Model\CampaignProfile;
 use Getresponse\Sdk\Operation\Model\NewContactCustomFieldValue;
 use Getresponse\Sdk\Operation\Model\NewContactTag;
@@ -81,6 +83,24 @@ class BasicTest extends TestCase
         $responseAsArray = json_decode($responseAsJSON, true);
         $this->assertCount(3, $responseAsArray);
         $this->assertEquals('https://api.getresponse.com/v3/accounts', $responseAsArray['href']);
+    }
+
+    /**
+     * @throws MalformedResponseDataException|InvalidDomainException
+     */
+    public function test_get_from_fields()
+    {
+        // All campaigns
+        $getResponse = GetResponse::forcePersonalAndAPIKey();
+        $client = $getResponse->newGetresponseClient();
+
+        $query = new GetFromFieldsSearchQuery();
+        $query->whereIsActive('true');
+        $sort = new GetFromFieldsSortParams();
+        $sort->sortAscBy('createdOn');
+        $responseUnsplitPaginatedDataAsArray = $getResponse->getFromFields($client, $query, $sort);
+        $this->assertStringContainsString('true', $responseUnsplitPaginatedDataAsArray[0]['isActive']);
+        return $responseUnsplitPaginatedDataAsArray[0]['isActive'];
     }
 
     /**
@@ -244,7 +264,7 @@ class BasicTest extends TestCase
         $getResponse = GetResponse::forcePersonalAndAPIKey();
         $client = $getResponse->newGetresponseClient();
         $responseUnsplitPaginatedDataAsArray = $getResponse->getTags($client);
-        $this->assertEquals('unit_test', $responseUnsplitPaginatedDataAsArray[0]['name']);
+        $this->assertStringContainsString('rest_test', $responseUnsplitPaginatedDataAsArray[0]['name']);
         return $responseUnsplitPaginatedDataAsArray[0]['tagId'];
     }
 

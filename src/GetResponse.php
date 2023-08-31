@@ -1,14 +1,32 @@
 <?php
 
+/**
+ * @package   GetResponse
+ * @author    Dario Fumagalli <dario.fumagalli@dftechnosolutions.com>
+ * @copyright 2023 DF Techno Solutions
+ * @license   GPL 2.0+
+ * @link      https://www.dftechnosolutions.com
+ *
+ * Description:     A Laravel 10+ wrapper for the GetResponse API
+ * Version:         1.0.0
+ * Author:          Dario Fumagalli
+ * Author URI:      https://www.dftechnosolutions.com
+ * License:         GPL 2.0+
+ * License URI:     http://www.gnu.org/licenses/gpl-3.0.txt
+ * Requires PHP:    8.1
+ */
+
 namespace Dfumagalli\Getresponse;
 
 use Exception;
+use Getresponse\Sdk\Client\Exception\InvalidCommandDataException;
 use Getresponse\Sdk\Client\Exception\InvalidDomainException;
 use Getresponse\Sdk\Client\Exception\MalformedResponseDataException;
 use Getresponse\Sdk\Client\GetresponseClient;
 use Getresponse\Sdk\Client\Operation\OperationResponse;
 use Getresponse\Sdk\Client\Operation\QueryOperation;
 use Getresponse\Sdk\Client\Operation\Pagination;
+use Getresponse\Sdk\GetresponseClientFactory;
 use Getresponse\Sdk\Operation\Campaigns\CreateCampaign\CreateCampaign;
 use Getresponse\Sdk\Operation\Contacts\CreateContact\CreateContact;
 use Getresponse\Sdk\Operation\Contacts\GetContact\GetContact;
@@ -16,7 +34,6 @@ use Getresponse\Sdk\Operation\Contacts\GetContact\GetContactFields;
 use Getresponse\Sdk\Operation\Contacts\GetContacts\GetContactsAdditionalFlags;
 use Getresponse\Sdk\Operation\Contacts\GetContacts\GetContactsSortParams;
 use Getresponse\Sdk\Operation\Contacts\GetContacts\GetContactsSearchQuery;
-use Getresponse\Sdk\GetresponseClientFactory;
 use Getresponse\Sdk\Operation\Accounts\GetAccounts\GetAccounts;
 use Getresponse\Sdk\Operation\Accounts\GetAccounts\GetAccountsFields;
 use Getresponse\Sdk\Operation\Campaigns\GetCampaign\GetCampaign;
@@ -30,14 +47,35 @@ use Getresponse\Sdk\Operation\CustomFields\GetCustomFields\GetCustomFieldsFields
 use Getresponse\Sdk\Operation\CustomFields\GetCustomFields\GetCustomFields;
 use Getresponse\Sdk\Operation\CustomFields\GetCustomFields\GetCustomFieldsSearchQuery;
 use Getresponse\Sdk\Operation\CustomFields\GetCustomFields\GetCustomFieldsSortParams;
+use Getresponse\Sdk\Operation\FromFields\GetFromFields\GetFromFields;
+use Getresponse\Sdk\Operation\FromFields\GetFromFields\GetFromFieldsFields;
+use Getresponse\Sdk\Operation\FromFields\GetFromFields\GetFromFieldsSearchQuery;
+use Getresponse\Sdk\Operation\FromFields\GetFromFields\GetFromFieldsSortParams;
 use Getresponse\Sdk\Operation\Model\CampaignReference;
+use Getresponse\Sdk\Operation\Model\FromFieldReference;
+use Getresponse\Sdk\Operation\Model\MessageContent;
+use Getresponse\Sdk\Operation\Model\MessageEditorEnum;
+use Getresponse\Sdk\Operation\Model\MessageFlagsArray;
 use Getresponse\Sdk\Operation\Model\NewCampaign;
 use Getresponse\Sdk\Operation\Model\CampaignOptinTypes;
 use Getresponse\Sdk\Operation\Model\CampaignProfile;
 use Getresponse\Sdk\Operation\Model\NewContact;
 use Getresponse\Sdk\Operation\Model\NewContactCustomFieldValue;
 use Getresponse\Sdk\Operation\Model\NewContactTag;
+use Getresponse\Sdk\Operation\Model\NewNewsletter;
+use Getresponse\Sdk\Operation\Model\NewsletterSendSettings;
 use Getresponse\Sdk\Operation\Model\NewTag;
+use Getresponse\Sdk\Operation\Newsletters\CreateNewsletter\CreateNewsletter;
+use Getresponse\Sdk\Operation\Newsletters\DeleteNewsletter\DeleteNewsletter;
+use Getresponse\Sdk\Operation\Newsletters\GetNewsletter\GetNewsletter;
+use Getresponse\Sdk\Operation\Newsletters\GetNewsletter\GetNewsletterFields;
+use Getresponse\Sdk\Operation\Newsletters\GetNewsletters\GetNewsletters;
+use Getresponse\Sdk\Operation\Newsletters\GetNewsletters\GetNewslettersFields;
+use Getresponse\Sdk\Operation\Newsletters\GetNewsletters\GetNewslettersSearchQuery;
+use Getresponse\Sdk\Operation\Newsletters\GetNewsletters\GetNewslettersSortParams;
+use Getresponse\Sdk\Operation\Newsletters\Statistics\GetNewsletterStatistics\GetNewsletterStatistics;
+use Getresponse\Sdk\Operation\Newsletters\Statistics\GetNewsletterStatistics\GetNewsletterStatisticsFields;
+use Getresponse\Sdk\Operation\Newsletters\Statistics\GetNewsletterStatistics\GetNewsletterStatisticsSearchQuery;
 use Getresponse\Sdk\Operation\Tags\CreateTag\CreateTag;
 use Getresponse\Sdk\Operation\Tags\DeleteTag\DeleteTag;
 use Getresponse\Sdk\Operation\Tags\GetTag\GetTag;
@@ -183,34 +221,40 @@ class GetResponse
     }
 
     /**
-     * Get the list of campaigns found on the GetResponse service
+     * Get the list of registered from fields matching the given query and parameters
      *
-     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
-     * @param int $campaignsPerPage How many campaign rows to fetch per paginated request
+     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
+     * @param GetFromFieldsSearchQuery|null $query Optional query, to filter the from fields to fetch
+     * @param GetFromFieldsSortParams|null $sort Optional from fields sort order
+     * @param array $fieldsToGet Array of fields names to get. Pass an empty array to fetch all the fields
+     * @param int $fromFieldsPerPage How many from fields rows to fetch per paginated request
      *
-     * @return array List of campaigns stored on GetResponse
+     * @return array List of from fields
      * @throws MalformedResponseDataException
      */
-    public function getCampaigns(GetresponseClient $client, int $campaignsPerPage = 10): array
-    {
-        $campaignsOperation = new GetCampaigns();
+    public function getFromFields(
+        GetresponseClient $client,
+        GetFromFieldsSearchQuery $query = null,
+        GetFromFieldsSortParams $sort = null,
+        array $fieldsToGet = [],
+        int $fromFieldsPerPage = 10
+    ): array {
+        $getFromFieldsOperation = new GetFromFields();
 
-        return $this->responseUnsplitPaginatedDataAsArray($client, $campaignsOperation, $campaignsPerPage);
-    }
+        if ($query !== null) {
+            $getFromFieldsOperation->setQuery($query);
+        }
 
-    /**
-     * Get information about a campaign, given its GetResponse id
-     *
-     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
-     * @param string $campaignId Campaign id, possibly fetched by @getCampaigns()
-     *
-     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
-     */
-    public function getCampaign(GetresponseClient $client, string $campaignId): OperationResponse
-    {
-        $campaignOperation = new GetCampaign($campaignId);
+        if ($sort != null) {
+            $getFromFieldsOperation->setSort($sort);
+        }
 
-        return $client->call($campaignOperation);
+        if (!empty($fieldsToGet)) {
+            $fromFields = new GetFromFieldsFields(...$fieldsToGet);
+            $getFromFieldsOperation->setFields($fromFields);
+        }
+
+        return $this->responseUnsplitPaginatedDataAsArray($client, $getFromFieldsOperation, $fromFieldsPerPage);
     }
 
     /**
@@ -248,124 +292,34 @@ class GetResponse
     }
 
     /**
-     * Get the list of contacts matching the given query and parameters
-     *
-     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
-     * @param GetContactsSearchQuery|null $query Optional query, to filter the contacts to fetch
-     * @param GetContactsSortParams|null $sort Optional contacts sort order
-     * @param array $fieldsToGet Array of fields names to get. Pass an empty array to fetch all the fields
-     * @param array $additionalFlags Array of additional flags. Pass an empty array to skip the assignment
-     * @param int $contactsPerPage How many contact rows to fetch per paginated request
-     *
-     * @return array $additionalFlags List of contacts stored on GetResponse
-     * @throws MalformedResponseDataException
-     */
-    public function getContacts(
-        GetresponseClient $client,
-        GetContactsSearchQuery $query = null,
-        GetContactsSortParams $sort = null,
-        array $fieldsToGet = [],
-        array $additionalFlags = [],
-        int $contactsPerPage = 10
-    ): array {
-        $getContactsOperation = new GetContacts();
-
-        if ($query !== null) {
-            $getContactsOperation->setQuery($query);
-        }
-
-        if ($sort != null) {
-            $getContactsOperation->setSort($sort);
-        }
-
-        if (!empty($fieldsToGet)) {
-            $contactsFields = new GetContactsFields(...$fieldsToGet);
-            $getContactsOperation->setFields($contactsFields);
-        }
-
-        if (!empty($additionalFlags)) {
-            $getContactsAdditionalFlags = new GetContactsAdditionalFlags(...$additionalFlags);
-            $getContactsOperation->setAdditionalFlags($getContactsAdditionalFlags);
-        }
-
-        return $this->responseUnsplitPaginatedDataAsArray($client, $getContactsOperation, $contactsPerPage);
-    }
-
-    /**
-     * Get the list of contacts matching the given query and parameters, one page at a time
-     *
-     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
-     * @param GetContactsSearchQuery|null $query Optional query, to filter the contacts to fetch
-     * @param GetContactsSortParams|null $sort Optional contacts sort order
-     * @param array $fieldsToGet Array of fields names to get. Pass an empty array to fetch all the fields
-     * @param array $additionalFlags Array of additional flags. Pass an empty array to skip the assignment
-     * @param int $contactsPerPage How many contact rows to fetch per paginated request
-     * @param int $pageNumber Results page to display
-     * @param int $finalPage Data set's last page number, returned by inner pagination calls
-     *
-     * @return array $additionalFlags List of contacts stored on GetResponse
-     * @throws MalformedResponseDataException
-     */
-    public function getPaginatedContacts(
-        GetresponseClient $client,
-        GetContactsSearchQuery $query = null,
-        GetContactsSortParams $sort = null,
-        array $fieldsToGet = [],
-        array $additionalFlags = [],
-        int $contactsPerPage = 10,
-        int $pageNumber = 1,
-        int &$finalPage = 1
-    ): array {
-        $getContactsOperation = new GetContacts();
-
-        if ($query !== null) {
-            $getContactsOperation->setQuery($query);
-        }
-
-        if ($sort != null) {
-            $getContactsOperation->setSort($sort);
-        }
-
-        if (!empty($fieldsToGet)) {
-            $contactsFields = new GetContactsFields(...$fieldsToGet);
-            $getContactsOperation->setFields($contactsFields);
-        }
-
-        if (!empty($additionalFlags)) {
-            $getContactsAdditionalFlags = new GetContactsAdditionalFlags(...$additionalFlags);
-            $getContactsOperation->setAdditionalFlags($getContactsAdditionalFlags);
-        }
-
-        return $this->responsePaginatedDataAsArray(
-            $client,
-            $getContactsOperation,
-            $contactsPerPage,
-            $pageNumber,
-            $finalPage
-        );
-    }
-
-    /**
-     * Get information about a contact, given its contact id
+     * Get the list of campaigns found on the GetResponse service
      *
      * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
-     * @param string $contactId Contact id, possibly fetched by @getContacts()
-     * @param array $fieldsToGet Array of fields names to get. Pass an empty array to fetch all the fields
+     * @param int $campaignsPerPage How many campaign rows to fetch per paginated request
+     *
+     * @return array List of campaigns stored on GetResponse
+     * @throws MalformedResponseDataException
+     */
+    public function getCampaigns(GetresponseClient $client, int $campaignsPerPage = 10): array
+    {
+        $campaignsOperation = new GetCampaigns();
+
+        return $this->responseUnsplitPaginatedDataAsArray($client, $campaignsOperation, $campaignsPerPage);
+    }
+
+    /**
+     * Get information about a campaign, given its GetResponse id
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $campaignId Campaign id, possibly fetched by @getCampaigns()
      *
      * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
      */
-    public function getContact(GetresponseClient $client, string $contactId, array $fieldsToGet = []): OperationResponse
+    public function getCampaign(GetresponseClient $client, string $campaignId): OperationResponse
     {
-        if (empty($fieldsToGet)) {
-            $fieldsToGet = (new GetContactFields())->getAllowedValues();
-        }
+        $campaignOperation = new GetCampaign($campaignId);
 
-        $contactFields = new GetContactFields(...$fieldsToGet);
-
-        $contactOperation = new GetContact($contactId);
-        $contactOperation->setFields($contactFields);
-
-        return $client->call($contactOperation);
+        return $client->call($campaignOperation);
     }
 
     /**
@@ -383,7 +337,7 @@ class GetResponse
      *
      * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
      * @throws MalformedResponseDataException
-    */
+     */
     public function createContact(
         GetresponseClient $client,
         string $campaignId,
@@ -509,38 +463,124 @@ class GetResponse
     }
 
     /**
-     * Create a new tag
+     * Get the list of contacts matching the given query and parameters
      *
-     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
-     * @param string $name Tag name
+     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
+     * @param GetContactsSearchQuery|null $query Optional query, to filter the contacts to fetch
+     * @param GetContactsSortParams|null $sort Optional contacts sort order
+     * @param array $fieldsToGet Array of fields names to get. Pass an empty array to fetch all the fields
+     * @param array $additionalFlags Array of additional flags. Pass an empty array to skip the assignment
+     * @param int $contactsPerPage How many contact rows to fetch per paginated request
      *
-     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     * @return array List of contacts
+     * @throws MalformedResponseDataException
      */
-    public function createTag(
+    public function getContacts(
         GetresponseClient $client,
-        string $name
-    ) {
-        $newTag = new NewTag($name);
+        GetContactsSearchQuery $query = null,
+        GetContactsSortParams $sort = null,
+        array $fieldsToGet = [],
+        array $additionalFlags = [],
+        int $contactsPerPage = 10
+    ): array {
+        $getContactsOperation = new GetContacts();
 
-        $createTag = new CreateTag($newTag);
-        return $client->call($createTag);
+        if ($query !== null) {
+            $getContactsOperation->setQuery($query);
+        }
+
+        if ($sort != null) {
+            $getContactsOperation->setSort($sort);
+        }
+
+        if (!empty($fieldsToGet)) {
+            $contactsFields = new GetContactsFields(...$fieldsToGet);
+            $getContactsOperation->setFields($contactsFields);
+        }
+
+        if (!empty($additionalFlags)) {
+            $getContactsAdditionalFlags = new GetContactsAdditionalFlags(...$additionalFlags);
+            $getContactsOperation->setAdditionalFlags($getContactsAdditionalFlags);
+        }
+
+        return $this->responseUnsplitPaginatedDataAsArray($client, $getContactsOperation, $contactsPerPage);
     }
 
     /**
-     * Delete a tag given its id
+     * Get the list of contacts matching the given query and parameters, one page at a time
      *
-     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
-     * @param string $tagId Tag id
+     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
+     * @param GetContactsSearchQuery|null $query Optional query, to filter the contacts to fetch
+     * @param GetContactsSortParams|null $sort Optional contacts sort order
+     * @param array $fieldsToGet Array of fields names to get. Pass an empty array to fetch all the fields
+     * @param array $additionalFlags Array of additional flags. Pass an empty array to skip the assignment
+     * @param int $contactsPerPage How many contact rows to fetch per paginated request
+     * @param int $pageNumber Results page to display
+     * @param int $finalPage Data set's last page number, returned by inner pagination calls
      *
-     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     * @return array List of contacts
      * @throws MalformedResponseDataException
      */
-    public function deleteTag(
+    public function getPaginatedContacts(
         GetresponseClient $client,
-        string $tagId
-    ) {
-        $deleteTag = new DeleteTag($tagId);
-        return $client->call($deleteTag);
+        GetContactsSearchQuery $query = null,
+        GetContactsSortParams $sort = null,
+        array $fieldsToGet = [],
+        array $additionalFlags = [],
+        int $contactsPerPage = 10,
+        int $pageNumber = 1,
+        int &$finalPage = 1
+    ): array {
+        $getContactsOperation = new GetContacts();
+
+        if ($query !== null) {
+            $getContactsOperation->setQuery($query);
+        }
+
+        if ($sort != null) {
+            $getContactsOperation->setSort($sort);
+        }
+
+        if (!empty($fieldsToGet)) {
+            $contactsFields = new GetContactsFields(...$fieldsToGet);
+            $getContactsOperation->setFields($contactsFields);
+        }
+
+        if (!empty($additionalFlags)) {
+            $getContactsAdditionalFlags = new GetContactsAdditionalFlags(...$additionalFlags);
+            $getContactsOperation->setAdditionalFlags($getContactsAdditionalFlags);
+        }
+
+        return $this->responsePaginatedDataAsArray(
+            $client,
+            $getContactsOperation,
+            $contactsPerPage,
+            $pageNumber,
+            $finalPage
+        );
+    }
+
+    /**
+     * Get information about a contact, given its contact id
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $contactId Contact id, possibly fetched by @getContacts()
+     * @param array $fieldsToGet Array of fields names to get. Pass an empty array to fetch all the fields
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     */
+    public function getContact(GetresponseClient $client, string $contactId, array $fieldsToGet = []): OperationResponse
+    {
+        if (empty($fieldsToGet)) {
+            $fieldsToGet = (new GetContactFields())->getAllowedValues();
+        }
+
+        $contactFields = new GetContactFields(...$fieldsToGet);
+
+        $contactOperation = new GetContact($contactId);
+        $contactOperation->setFields($contactFields);
+
+        return $client->call($contactOperation);
     }
 
     /**
@@ -604,6 +644,41 @@ class GetResponse
     }
 
     /**
+     * Create a new tag
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $name Tag name
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     */
+    public function createTag(
+        GetresponseClient $client,
+        string $name
+    ) {
+        $newTag = new NewTag($name);
+
+        $createTag = new CreateTag($newTag);
+        return $client->call($createTag);
+    }
+
+    /**
+     * Delete a tag given its id
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $tagId Tag id
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     * @throws MalformedResponseDataException
+     */
+    public function deleteTag(
+        GetresponseClient $client,
+        string $tagId
+    ) {
+        $deleteTag = new DeleteTag($tagId);
+        return $client->call($deleteTag);
+    }
+
+    /**
      * Get the list of tags matching the given query and parameters
      *
      * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
@@ -663,6 +738,224 @@ class GetResponse
         return $client->call($getTagOperation);
     }
 
+    /**
+     * Create a new newsletter, with optional custom fields and tags.
+     * Reference at @see https://apireference.getresponse.com/#operation/createNewsletter
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $campaignId Campaign id the newsletter is attached to, as returned by @getCampaigns()
+     * @param string $name Newsletter name, as shown on GetResponse's newsletter composer
+     * @param string $subject Newsletter (email) subject
+     * @param string $contactFromId Id of the contact sending the newsletter
+     * @param string $contactReplyToId Id of the reply to contact. Empty = same as $contactFromId
+     * @param string $plainContent Plain text version of the newsletter (max 500k)
+     * @param string $htmlContent HTML version of the newsletter (max 500k)
+     * @param MessageFlagsArray|null $messageFlags Statistics to gather. Defaults to "openrate"  if null
+     * @param NewsletterSendSettings|null $newsletterSendSettings Destination contacts list source(s)
+     * @param string $sendOn When to send the newsletter. Empty = send now.
+     * @param array $newsletterAttachments Newsletter attachments (max 400KB for all the attachments combined)
+     * @param MessageEditorEnum|null $messageEditor How the message was created. Empty = "custom".
+     * @param string $type Newsletter type. Empty = "broadcast".
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     * @throws InvalidCommandDataException
+     */
+    public function createNewsletter(
+        GetresponseClient $client,
+        string $campaignId,
+        string $name,
+        string $subject,
+        string $contactFromId,
+        string $contactReplyToId = '',
+        string $plainContent = '',
+        string $htmlContent = '',
+        MessageFlagsArray $messageFlags = null,
+        NewsletterSendSettings $newsletterSendSettings = null,
+        string $sendOn = '',
+        array $newsletterAttachments = [],
+        MessageEditorEnum $messageEditor = null,
+        string $type = ''
+    ) {
+        $createNewsletterContent = new MessageContent();
+
+        if (!empty($plainContent)) {
+            $createNewsletterContent->setPlain($plainContent);
+        }
+
+        if (!empty($htmlContent)) {
+            $createNewsletterContent->setHtml($htmlContent);
+        }
+
+        $createNewsletterSendSettings = $newsletterSendSettings ?? new NewsletterSendSettings();
+
+        $createNewsletter = new NewNewsletter(
+            $subject,
+            new FromFieldReference($contactFromId),
+            new CampaignReference($campaignId),
+            $createNewsletterContent,
+            $createNewsletterSendSettings
+        );
+
+        $createNewsletter->setName($name);
+
+        if (!$messageFlags) {
+            $messageFlags = new MessageFlagsArray('openrate');
+        }
+
+        $createNewsletter->setFlags($messageFlags);
+
+        if (empty($contactReplyToId)) {
+            $contactReplyToId = $contactFromId;
+        }
+
+        $createNewsletter->setReplyTo(new FromFieldReference($contactReplyToId));
+
+        if (!empty($newsletterAttachment)) {
+            $createNewsletter->setAttachments($newsletterAttachments);
+        }
+
+        if (!$messageEditor) {
+            $messageEditor = new MessageEditorEnum('custom');
+        }
+
+        $createNewsletter->setEditor($messageEditor);
+
+        if (!empty($sendOn)) {
+            $createNewsletter->setSendOn($sendOn);
+        }
+
+        if (empty($type)) {
+            $type = 'broadcast';
+        }
+
+        $createNewsletter->setType($type);
+
+        $createNewsletterOperation = new CreateNewsletter($createNewsletter);
+
+        /*
+            $test = var_export($createNewsletterOperation->getMethod(), true);
+            $test .= "\n"  . var_export($createNewsletterOperation->getUrl(), true);
+            $test .= "\n"  . var_export($createNewsletterOperation->getBody(), true);
+        */
+
+        return $client->call($createNewsletterOperation);
+    }
+
+    /**
+     * Get the list of newsletters matching the given query and parameters
+     * Reference at @see https://apireference.getresponse.com/#operation/getNewsletterList
+     *
+     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
+     * @param GetNewslettersSearchQuery|null $query Optional query, to filter the newsletters to fetch
+     * @param GetNewslettersSortParams|null $sort Optional newsletters sort order
+     * @param array $fieldsToGet Array of newsletters fields to get. Pass an empty array to fetch all the fields
+     * @param int $newslettersPerPage How many newsletters rows to fetch per paginated request
+     *
+     * @return array List of newsletters
+     * @throws MalformedResponseDataException
+     */
+    public function getNewsletters(
+        GetresponseClient $client,
+        GetNewslettersSearchQuery $query = null,
+        GetNewslettersSortParams $sort = null,
+        array $fieldsToGet = [],
+        int $newslettersPerPage = 10
+    ): array {
+        $getNewslettersOperation = new GetNewsletters();
+
+        if ($query !== null) {
+            $getNewslettersOperation->setQuery($query);
+        }
+
+        if ($sort != null) {
+            $getNewslettersOperation->setSort($sort);
+        }
+
+        if (!empty($fieldsToGet)) {
+            $newslettersFields = new GetNewslettersFields(...$fieldsToGet);
+            $getNewslettersOperation->setFields($newslettersFields);
+        }
+
+        return $this->responseUnsplitPaginatedDataAsArray($client, $getNewslettersOperation, $newslettersPerPage);
+    }
+
+    /**
+     * Get the details of a newsletter given its id
+     * Reference at @see https://apireference.getresponse.com/#operation/getNewsletter
+     *
+     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $newsletterId Id of the newsletter to get the details of
+     * @param array $fieldsToGet Array of newsletter details fields to get. Pass an empty array to fetch all the fields
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     * @throws MalformedResponseDataException
+     */
+    public function getNewsletter(
+        GetresponseClient $client,
+        string $newsletterId,
+        array $fieldsToGet = []
+    ): OperationResponse {
+        $getNewsletterOperation = new GetNewsletter($newsletterId);
+
+        if (!empty($fieldsToGet)) {
+            $newsletterFields = new GetNewsletterFields(...$fieldsToGet);
+            $getNewsletterOperation->setFields($newsletterFields);
+        }
+
+        return $client->call($getNewsletterOperation);
+    }
+
+    /**
+     * Delete a newsletter given its id
+     * Reference at @see https://apireference.getresponse.com/#operation/deleteNewsletter
+     *
+     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $newsletterId Id of the newsletter to delete
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     * @throws MalformedResponseDataException
+     */
+    public function deleteNewsletter(
+        GetresponseClient $client,
+        string $newsletterId,
+    ): OperationResponse {
+        $deleteNewsletterOperation = new DeleteNewsletter($newsletterId);
+
+        return $client->call($deleteNewsletterOperation);
+    }
+
+    /**
+     * Get a specific newsletters statistics
+     * Reference at @see https://apireference.getresponse.com/#operation/getSingleNewsletterStatistics
+     *
+     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $newsletterId Id of the newsletter to get the statistics of
+     * @param GetNewsletterStatisticsSearchQuery|null $query Optional query, to filter the newsletters statistics to fetch
+     * @param array $fieldsToGet Array of newsletters statistics fields to get. Pass an empty array to fetch all the fields
+     *
+     * @return array Newsletter statistics
+     * @throws MalformedResponseDataException
+     */
+    public function getNewsletterStatistics(
+        GetresponseClient $client,
+        string $newsletterId,
+        GetNewsletterStatisticsSearchQuery $query = null,
+        array $fieldsToGet = [],
+    ): array {
+        $getNewsletterStatisticsOperation = new GetNewsletterStatistics($newsletterId);
+
+        if ($query !== null) {
+            $getNewsletterStatisticsOperation->setQuery($query);
+        }
+
+        if (!empty($fieldsToGet)) {
+            $newsletterStatisticsFields = new GetNewsletterStatisticsFields(...$fieldsToGet);
+            $getNewsletterStatisticsOperation->setFields($newsletterStatisticsFields);
+        }
+
+        return $this->responseUnsplitPaginatedDataAsArray($client, $getNewsletterStatisticsOperation, 100);
+    }
+
     // Returned / response data manipulation functions. Data may be manipulated either as array or as JSON (never
     // both, because they share and fetch from a stream and it gets used up).
 
@@ -717,8 +1010,8 @@ class GetResponse
                 $client,
                 $clientOperation,
                 $resultsPerPage,
-                $pageNumber++,
-                $finalPage
+                $pageNumber, // Passed by reference, because the value can change in rel time
+                $finalPage   // Passed by reference, because the value can change in rel time
             );
 
             foreach ($subResults as $subResult) {
@@ -746,7 +1039,7 @@ class GetResponse
         GetresponseClient $client,
         QueryOperation $clientOperation,
         int $resultsPerPage = 10,
-        int $pageNumber = 1,
+        int &$pageNumber = 1,
         int &$finalPage = 1
     ): array {
         /**
