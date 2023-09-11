@@ -27,6 +27,13 @@ use Getresponse\Sdk\Client\Operation\OperationResponse;
 use Getresponse\Sdk\Client\Operation\QueryOperation;
 use Getresponse\Sdk\Client\Operation\Pagination;
 use Getresponse\Sdk\GetresponseClientFactory;
+use Getresponse\Sdk\Operation\Autoresponders\CreateAutoresponder\CreateAutoresponder;
+use Getresponse\Sdk\Operation\Autoresponders\GetAutoresponder\GetAutoresponder;
+use Getresponse\Sdk\Operation\Autoresponders\GetAutoresponder\GetAutoresponderFields;
+use Getresponse\Sdk\Operation\Autoresponders\GetAutoresponders\GetAutoresponders;
+use Getresponse\Sdk\Operation\Autoresponders\GetAutoresponders\GetAutorespondersFields;
+use Getresponse\Sdk\Operation\Autoresponders\GetAutoresponders\GetAutorespondersSearchQuery;
+use Getresponse\Sdk\Operation\Autoresponders\GetAutoresponders\GetAutorespondersSortParams;
 use Getresponse\Sdk\Operation\Campaigns\CreateCampaign\CreateCampaign;
 use Getresponse\Sdk\Operation\Contacts\CreateContact\CreateContact;
 use Getresponse\Sdk\Operation\Contacts\GetContact\GetContact;
@@ -51,11 +58,13 @@ use Getresponse\Sdk\Operation\FromFields\GetFromFields\GetFromFields;
 use Getresponse\Sdk\Operation\FromFields\GetFromFields\GetFromFieldsFields;
 use Getresponse\Sdk\Operation\FromFields\GetFromFields\GetFromFieldsSearchQuery;
 use Getresponse\Sdk\Operation\FromFields\GetFromFields\GetFromFieldsSortParams;
+use Getresponse\Sdk\Operation\Model\AutoresponderSendSettings;
 use Getresponse\Sdk\Operation\Model\CampaignReference;
 use Getresponse\Sdk\Operation\Model\FromFieldReference;
 use Getresponse\Sdk\Operation\Model\MessageContent;
 use Getresponse\Sdk\Operation\Model\MessageEditorEnum;
 use Getresponse\Sdk\Operation\Model\MessageFlagsArray;
+use Getresponse\Sdk\Operation\Model\NewAutoresponder;
 use Getresponse\Sdk\Operation\Model\NewCampaign;
 use Getresponse\Sdk\Operation\Model\CampaignOptinTypes;
 use Getresponse\Sdk\Operation\Model\CampaignProfile;
@@ -63,8 +72,10 @@ use Getresponse\Sdk\Operation\Model\NewContact;
 use Getresponse\Sdk\Operation\Model\NewContactCustomFieldValue;
 use Getresponse\Sdk\Operation\Model\NewContactTag;
 use Getresponse\Sdk\Operation\Model\NewNewsletter;
+use Getresponse\Sdk\Operation\Model\NewSearchContacts;
 use Getresponse\Sdk\Operation\Model\NewsletterSendSettings;
 use Getresponse\Sdk\Operation\Model\NewTag;
+use Getresponse\Sdk\Operation\Model\SearchContactConditionsDetails;
 use Getresponse\Sdk\Operation\Newsletters\CreateNewsletter\CreateNewsletter;
 use Getresponse\Sdk\Operation\Newsletters\DeleteNewsletter\DeleteNewsletter;
 use Getresponse\Sdk\Operation\Newsletters\GetNewsletter\GetNewsletter;
@@ -76,6 +87,15 @@ use Getresponse\Sdk\Operation\Newsletters\GetNewsletters\GetNewslettersSortParam
 use Getresponse\Sdk\Operation\Newsletters\Statistics\GetNewsletterStatistics\GetNewsletterStatistics;
 use Getresponse\Sdk\Operation\Newsletters\Statistics\GetNewsletterStatistics\GetNewsletterStatisticsFields;
 use Getresponse\Sdk\Operation\Newsletters\Statistics\GetNewsletterStatistics\GetNewsletterStatisticsSearchQuery;
+use Getresponse\Sdk\Operation\SearchContacts\Contacts\GetContactsBySearchContactsConditions\GetContactsBySearchContactsConditions;
+use Getresponse\Sdk\Operation\SearchContacts\CreateSearchContact\CreateSearchContact;
+use Getresponse\Sdk\Operation\SearchContacts\DeleteSearchContact\DeleteSearchContact;
+use Getresponse\Sdk\Operation\SearchContacts\GetSearchContact\GetSearchContact;
+use Getresponse\Sdk\Operation\SearchContacts\GetSearchContact\GetSearchContactFields;
+use Getresponse\Sdk\Operation\SearchContacts\GetSearchContacts\GetSearchContacts;
+use Getresponse\Sdk\Operation\SearchContacts\GetSearchContacts\GetSearchContactsFields;
+use Getresponse\Sdk\Operation\SearchContacts\GetSearchContacts\GetSearchContactsSearchQuery;
+use Getresponse\Sdk\Operation\SearchContacts\GetSearchContacts\GetSearchContactsSortParams;
 use Getresponse\Sdk\Operation\Tags\CreateTag\CreateTag;
 use Getresponse\Sdk\Operation\Tags\DeleteTag\DeleteTag;
 use Getresponse\Sdk\Operation\Tags\GetTag\GetTag;
@@ -386,6 +406,7 @@ class GetResponse
         }
 
         $createContactOperation = new CreateContact($newContact);
+
         return $client->call($createContactOperation);
     }
 
@@ -643,6 +664,116 @@ class GetResponse
         return $client->call($customFieldOperation);
     }
 
+    // Search contacts (segments) API calls
+
+    /**
+     * Create a new search contacts (segment)
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $name Search contacts (segment) name
+     * @param array $section Array of one or more search criteria
+     * @param string $sectionLogicOperator Include contacts that match the criteria above, combined by this operator
+     * @param array $subscribersType Only include contacts with this subscription status
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     */
+    public function createSearchContact(
+        GetresponseClient $client,
+        NewSearchContacts $newSearchContacts
+    ) {
+        $createContactOperation = new CreateSearchContact($newSearchContacts);
+
+        return $client->call($createContactOperation);
+    }
+
+    /**
+     * Get the saved search contacts (segments) matching the given query and parameters, one page at a time
+     *
+     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
+     * @param GetContactsSearchQuery|null $query Optional query, to filter the saved search contacts to fetch
+     * @param GetContactsSortParams|null $sort Optional saved search contacts sort order
+     * @param array $fieldsToGet Array of fields names to get. Pass an empty array to fetch all the fields
+     * @param int $searchContactsPerPage How many saved search contacts rows to fetch per paginated request
+     * @param int $pageNumber Results page to display
+     * @param int $finalPage Data set's last page number, returned by inner pagination calls
+     *
+     * @return array List of saved search contacts
+     * @throws MalformedResponseDataException
+     */
+    public function getPaginatedSearchContacts(
+        GetresponseClient $client,
+        GetSearchContactsSearchQuery $query = null,
+        GetSearchContactsSortParams $sort = null,
+        array $fieldsToGet = [],
+        int $searchContactsPerPage = 10,
+        int $pageNumber = 1,
+        int &$finalPage = 1
+    ): array {
+        $getSearchContactOperation = new GetSearchContacts();
+
+        if ($query !== null) {
+            $getSearchContactOperation->setQuery($query);
+        }
+
+        if ($sort != null) {
+            $getSearchContactOperation->setSort($sort);
+        }
+
+        if (!empty($fieldsToGet)) {
+            $searchContactsFields = new GetSearchContactsFields(...$fieldsToGet);
+            $getSearchContactOperation->setFields($searchContactsFields);
+        }
+
+        return $this->responsePaginatedDataAsArray(
+            $client,
+            $getSearchContactOperation,
+            $searchContactsPerPage,
+            $pageNumber,
+            $finalPage
+        );
+    }
+
+    /**
+     * Get information about a saved search contacts (segments), given its saved search contacts id
+     *
+     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $searchContactId Saved search contacts id, possibly fetched by @getSearchContacts()
+     * @param array $fieldsToGet Array of fields names to get. Pass an empty array to fetch all the fields
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     */
+    public function getSearchContact(GetresponseClient $client, string $searchContactId, array $fieldsToGet = []): OperationResponse
+    {
+        if (empty($fieldsToGet)) {
+            $fieldsToGet = (new GetSearchContactFields())->getAllowedValues();
+        }
+
+        $tagFields = new GetSearchContactFields(...$fieldsToGet);
+
+        $getSearchContactOperation = new GetSearchContact($searchContactId);
+        $getSearchContactOperation->setFields($tagFields);
+
+        return $client->call($getSearchContactOperation);
+    }
+
+    /**
+     * Delete a saved search contacts (segments) given its id
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $searchContactId
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     */
+    public function deleteSearchContact(
+        GetresponseClient $client,
+        string $searchContactId
+    ) {
+        $deleteSearchContactOperation = new DeleteSearchContact($searchContactId);
+        return $client->call($deleteSearchContactOperation);
+    }
+
+    // Tag API calls
+
     /**
      * Create a new tag
      *
@@ -657,25 +788,8 @@ class GetResponse
     ) {
         $newTag = new NewTag($name);
 
-        $createTag = new CreateTag($newTag);
-        return $client->call($createTag);
-    }
-
-    /**
-     * Delete a tag given its id
-     *
-     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
-     * @param string $tagId Tag id
-     *
-     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
-     * @throws MalformedResponseDataException
-     */
-    public function deleteTag(
-        GetresponseClient $client,
-        string $tagId
-    ) {
-        $deleteTag = new DeleteTag($tagId);
-        return $client->call($deleteTag);
+        $createTagOperation = new CreateTag($newTag);
+        return $client->call($createTagOperation);
     }
 
     /**
@@ -737,6 +851,25 @@ class GetResponse
 
         return $client->call($getTagOperation);
     }
+
+    /**
+     * Delete a tag given its id
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $tagId Tag id
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     * @throws MalformedResponseDataException
+     */
+    public function deleteTag(
+        GetresponseClient $client,
+        string $tagId
+    ) {
+        $deleteTagOperation = new DeleteTag($tagId);
+        return $client->call($deleteTagOperation);
+    }
+
+    // Newsletters API calls
 
     /**
      * Create a new newsletter, with optional custom fields and tags.
@@ -956,8 +1089,177 @@ class GetResponse
         return $this->responseUnsplitPaginatedDataAsArray($client, $getNewsletterStatisticsOperation, 100);
     }
 
+    // Autoresponders API calls
+
+    /**
+     * Create a new autoresponder, with optional custom fields and tags.
+     * Reference at @see https://apireference.getresponse.com/#operation/createAutoresponder
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $campaignId Campaign id the autoresponder is attached to, as returned by @getCampaigns()
+     * @param string $name Autoresponder name, as shown on GetResponse's autoresponder composer
+     * @param string $subject Autoresponder (email) subject
+     * @param string $contactFromId Id of the contact sending the autoresponder
+     * @param string $contactReplyToId Id of the reply to contact. Empty = same as $contactFromId
+     * @param string $plainContent Plain text version of the autoresponder (max 500k)
+     * @param string $htmlContent HTML version of the autoresponder (max 500k)
+     * @param MessageFlagsArray|null $messageFlags Statistics to gather. Defaults to "openrate"  if null
+     * @param AutoresponderSendSettings|null $newsletterSendSettings Destination contacts list source(s)
+     * @param string $sendOn When to send the autoresponder. Empty = send now.
+     * @param array $newsletterAttachments Autoresponder attachments (max 400KB for all the attachments combined)
+     * @param MessageEditorEnum|null $messageEditor How the message was created. Empty = "custom".
+     * @param string $type Autoresponder type. Empty = "broadcast".
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     */
+    public function createAutoresponder(
+        GetresponseClient $client,
+        string $campaignId,
+        string $name,
+        string $subject,
+        string $contactFromId,
+        string $contactReplyToId = '',
+        string $plainContent = '',
+        string $htmlContent = '',
+        MessageFlagsArray $messageFlags = null,
+        AutoresponderSendSettings $newsletterSendSettings = null,
+        string $sendOn = '',
+        array $newsletterAttachments = [],
+        MessageEditorEnum $messageEditor = null,
+        string $type = ''
+    ) {
+        // TODO This code is NOT complete!
+        $createAutoresponderContent = new MessageContent();
+
+        if (!empty($plainContent)) {
+            $createAutoresponderContent->setPlain($plainContent);
+        }
+
+        if (!empty($htmlContent)) {
+            $createAutoresponderContent->setHtml($htmlContent);
+        }
+
+        $createAutoresponderSendSettings = $newsletterSendSettings ?? new NewsletterSendSettings();
+
+        $createAutoresponder = new NewAutoresponder(
+            $subject,
+            new FromFieldReference($contactFromId),
+            new CampaignReference($campaignId),
+            $createAutoresponderContent,
+            $createAutoresponderSendSettings
+        );
+
+        $createAutoresponder->setName($name);
+
+        if (!$messageFlags) {
+            $messageFlags = new MessageFlagsArray('openrate');
+        }
+
+        $createAutoresponder->setFlags($messageFlags);
+
+        if (empty($contactReplyToId)) {
+            $contactReplyToId = $contactFromId;
+        }
+
+        $createAutoresponder->setReplyTo(new FromFieldReference($contactReplyToId));
+
+        if (!empty($newsletterAttachments)) {
+            $createAutoresponder->setAttachments($newsletterAttachments);
+        }
+
+        if (!$messageEditor) {
+            $messageEditor = new MessageEditorEnum('custom');
+        }
+
+        $createAutoresponder->setEditor($messageEditor);
+
+        if (!empty($sendOn)) {
+            $createAutoresponder->setSendOn($sendOn);
+        }
+
+        if (empty($type)) {
+            $type = 'broadcast';
+        }
+
+        $createAutoresponder->setType($type);
+
+        $createAutoresponderOperation = new CreateAutoresponder($createAutoresponder);
+
+        /*
+            $test = var_export($createAutoresponderOperation->getMethod(), true);
+            $test .= "\n"  . var_export($createAutoresponderOperation->getUrl(), true);
+            $test .= "\n"  . var_export($createAutoresponderOperation->getBody(), true);
+        */
+
+        return $client->call($createAutoresponderOperation);
+    }
+
+    /**
+     * Get the list of autoresponders matching the given query and parameters
+     * Reference at @see https://apireference.getresponse.com/#operation/getAutoresponderList
+     *
+     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
+     * @param GetAutorespondersSearchQuery|null $query Optional query, to filter the autoresponders to fetch
+     * @param GetAutorespondersSortParams|null $sort Optional autoresponders sort order
+     * @param array $fieldsToGet Array of autoresponders fields to get. Pass an empty array to fetch all the fields
+     * @param int $autorespondersPerPage How many autoresponders rows to fetch per paginated request
+     *
+     * @return array List of autoresponder
+     * @throws MalformedResponseDataException
+     */
+    public function getAutoresponders(
+        GetresponseClient $client,
+        GetAutorespondersSearchQuery $query = null,
+        GetAutorespondersSortParams $sort = null,
+        array $fieldsToGet = [],
+        int $autorespondersPerPage = 10
+    ): array {
+        $getAutorespondersOperation = new GetAutoresponders();
+
+        if ($query !== null) {
+            $getAutorespondersOperation->setQuery($query);
+        }
+
+        if ($sort != null) {
+            $getAutorespondersOperation->setSort($sort);
+        }
+
+        if (!empty($fieldsToGet)) {
+            $autorespondersFields = new GetAutorespondersFields(...$fieldsToGet);
+            $getAutorespondersOperation->setFields($autorespondersFields);
+        }
+
+        return $this->responseUnsplitPaginatedDataAsArray($client, $getAutorespondersOperation, $autorespondersPerPage);
+    }
+
+    /**
+     * Get the details of an autoresponder given its id
+     * Reference at @see https://apireference.getresponse.com/#operation/getAutoresponder
+     *
+     * @param GetresponseClient $client $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $autoresponderId Id of the autoresponder to get the details of
+     * @param array $fieldsToGet Array of autoresponder details fields to get. Pass an empty array to fetch all the fields
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     * @throws MalformedResponseDataException
+     */
+    public function getAutoresponder(
+        GetresponseClient $client,
+        string $autoresponderId,
+        array $fieldsToGet = []
+    ): OperationResponse {
+        $getAutoresponderOperation = new GetAutoresponder($autoresponderId);
+
+        if (!empty($fieldsToGet)) {
+            $autoresponderFields = new GetAutoresponderFields(...$fieldsToGet);
+            $getAutoresponderOperation->setFields($autoresponderFields);
+        }
+
+        return $client->call($getAutoresponderOperation);
+    }
+
     // Returned / response data manipulation functions. Data may be manipulated either as array or as JSON (never
-    // both, because they share and fetch from a stream and it gets used up).
+    // both, because they share and fetch from a stream, and it gets used up).
 
     /**
      * Return REST call response data as array. N.B. cannot be called after a previous call to @responseDataAsJSON!
