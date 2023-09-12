@@ -26,6 +26,7 @@ class SegmentTest extends TestCase
     public const UNIT_TEST_CONTACT_ID = 'aUeUu'; // dario.fumagalli@dftechnosolutions.com
     public const UNIT_TEST_REPLY_TO_ID = 'dN2Vq8'; //
     public const UNIT_TEST_TAG_ID = 'Vumth'; // "unit_test" tag
+    public const UNIT_TEST_SEARCH_CONTACTS_NAME = 'Unit test segment'; // "Unit test segment"
     public const UNIT_TEST_SEARCH_CONTACTS_ID = 'afSp2'; // "Unit test default segment"
     public const UNIT_TEST_SEARCH_CONTACTS_NAME_PREFIX = 'Unit test segment';
 
@@ -101,7 +102,7 @@ class SegmentTest extends TestCase
         $client = $getResponse->newGetresponseClient();
 
         $query = new GetSearchContactsSearchQuery();
-        // $query->whereName(static::UNIT_TEST_CONTACT_NAME);
+        // $query->whereName(static::UNIT_TEST_SEARCH_CONTACTS_NAME);
         $sort = new GetSearchContactsSortParams();
         $sort->sortAscBy('name');
         $searchContacts = $getResponse->getPaginatedSearchContacts($client, $query, $sort);
@@ -142,7 +143,7 @@ class SegmentTest extends TestCase
     }
 
     /**
-     * @param array $newsletters
+     * @param array $searchContacts
      *
      * @return void
      *
