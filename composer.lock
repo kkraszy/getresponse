@@ -4,27 +4,21 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "463b15ce2ce0bb76865619fd38d36c88",
+    "content-hash": "63088b43fbf319760421bc22364f3641",
     "packages": [
         {
-            "name": "getresponse/sdk-php",
-            "version": "3.0.0",
+            "name": "dfumagalli/sdk-php",
+            "version": "v2.0.5",
             "source": {
                 "type": "git",
-                "url": "https://github.com/GetResponse/sdk-php.git",
-                "reference": "a255de23ede4f9cf83b893e63e0770975f9ca4ce"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/GetResponse/sdk-php/zipball/a255de23ede4f9cf83b893e63e0770975f9ca4ce",
-                "reference": "a255de23ede4f9cf83b893e63e0770975f9ca4ce",
-                "shasum": ""
+                "url": "https://github.com/dfumagalli/sdk-php.git",
+                "reference": "4552207e9f18cd458a45b0dadd0dfbe17cf8abe9"
             },
             "require": {
-                "getresponse/sdk-php-client": "^2.0"
+                "dfumagalli/sdk-php-client": "^1.1"
             },
             "require-dev": {
-                "phpunit/phpunit": "^9.5"
+                "phpunit/phpunit": "^9.3"
             },
             "type": "library",
             "autoload": {
@@ -33,7 +27,6 @@
                     "Getresponse\\Sdk\\Test\\": "tests/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -44,30 +37,22 @@
             ],
             "description": "SDK for all public GetResponse products",
             "support": {
-                "email": "getresponse-devzone@cs.getresponse.com",
-                "issues": "https://github.com/GetResponse/sdk-php/issues",
-                "source": "https://github.com/GetResponse/sdk-php/tree/3.0.0"
+                "email": "getresponse-devzone@cs.getresponse.com"
             },
-            "time": "2023-08-22T11:22:52+00:00"
+            "time": "2024-02-03T04:15:07+00:00"
         },
         {
-            "name": "getresponse/sdk-php-client",
-            "version": "2.0.1",
+            "name": "dfumagalli/sdk-php-client",
+            "version": "v1.1.6",
             "source": {
                 "type": "git",
-                "url": "https://github.com/GetResponse/sdk-php-client.git",
-                "reference": "363323335cb558837856db8238a10999a6215fbd"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/GetResponse/sdk-php-client/zipball/363323335cb558837856db8238a10999a6215fbd",
-                "reference": "363323335cb558837856db8238a10999a6215fbd",
-                "shasum": ""
+                "url": "https://github.com/dfumagalli/sdk-php-client.git",
+                "reference": "7ff7d45c0f7e09b4a04fd772189b5f553424eef4"
             },
             "require": {
                 "guzzlehttp/psr7": "^2.1",
-                "php": ">=7.3",
-                "psr/log": "^1.0 || ^2.0 || ^3.0"
+                "php": ">=8.0.0",
+                "psr/log": "^3.0"
             },
             "require-dev": {
                 "php-mock/php-mock": "^1.0 || ^2.0",
@@ -81,7 +66,6 @@
                     "Getresponse\\Sdk\\Client\\Test\\": "tests/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -92,24 +76,22 @@
             ],
             "description": "GetResponse SDK client for all public GetResponse product",
             "support": {
-                "email": "getresponse-devzone@cs.getresponse.com",
-                "issues": "https://github.com/GetResponse/sdk-php-client/issues",
-                "source": "https://github.com/GetResponse/sdk-php-client/tree/2.0.1"
+                "email": "getresponse-devzone@cs.getresponse.com"
             },
-            "time": "2023-08-22T11:21:15+00:00"
+            "time": "2023-06-22T20:19:38+00:00"
         },
         {
             "name": "guzzlehttp/psr7",
-            "version": "2.6.1",
+            "version": "2.6.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/psr7.git",
-                "reference": "be45764272e8873c72dbe3d2edcfdfcc3bc9f727"
+                "reference": "45b30f99ac27b5ca93cb4831afe16285f57b8221"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/psr7/zipball/be45764272e8873c72dbe3d2edcfdfcc3bc9f727",
-                "reference": "be45764272e8873c72dbe3d2edcfdfcc3bc9f727",
+                "url": "https://api.github.com/repos/guzzle/psr7/zipball/45b30f99ac27b5ca93cb4831afe16285f57b8221",
+                "reference": "45b30f99ac27b5ca93cb4831afe16285f57b8221",
                 "shasum": ""
             },
             "require": {
@@ -123,9 +105,9 @@
                 "psr/http-message-implementation": "1.0"
             },
             "require-dev": {
-                "bamarni/composer-bin-plugin": "^1.8.1",
+                "bamarni/composer-bin-plugin": "^1.8.2",
                 "http-interop/http-factory-tests": "^0.9",
-                "phpunit/phpunit": "^8.5.29 || ^9.5.23"
+                "phpunit/phpunit": "^8.5.36 || ^9.6.15"
             },
             "suggest": {
                 "laminas/laminas-httphandlerrunner": "Emit PSR-7 responses"
@@ -196,7 +178,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/psr7/issues",
-                "source": "https://github.com/guzzle/psr7/tree/2.6.1"
+                "source": "https://github.com/guzzle/psr7/tree/2.6.2"
             },
             "funding": [
                 {
@@ -212,7 +194,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2023-08-27T10:13:57+00:00"
+            "time": "2023-12-03T20:05:35+00:00"
         },
         {
             "name": "psr/http-factory",
@@ -419,11 +401,11 @@
     ],
     "packages-dev": [],
     "aliases": [],
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "stability-flags": [],
-    "prefer-stable": false,
+    "prefer-stable": true,
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "plugin-api-version": "2.6.0"
 }

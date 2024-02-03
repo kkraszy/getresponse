@@ -20,7 +20,7 @@
         }
     ],
     "require": {
-        "getresponse/sdk-php": "^3.0"
+        "dfumagalli/sdk-php": "^2.0"
     },
     "autoload": {
         "psr-4": {
@@ -34,5 +34,7 @@
             ]
         }
     },
-    "minimum-stability": "stable"
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "version": "v0.1.7.2"
 }
