@@ -8,11 +8,11 @@
     "packages": [
         {
             "name": "dfumagalli/sdk-php",
-            "version": "v2.0.5",
+            "version": "v2.0.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/dfumagalli/sdk-php.git",
-                "reference": "4552207e9f18cd458a45b0dadd0dfbe17cf8abe9"
+                "reference": "0c140f77ff1e06de3138299ec9409b6bba0059c4"
             },
             "require": {
                 "dfumagalli/sdk-php-client": "^1.1"
@@ -39,7 +39,7 @@
             "support": {
                 "email": "getresponse-devzone@cs.getresponse.com"
             },
-            "time": "2024-02-03T04:15:07+00:00"
+            "time": "2024-02-08T20:50:33+00:00"
         },
         {
             "name": "dfumagalli/sdk-php-client",
