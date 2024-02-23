@@ -36,6 +36,8 @@ use Getresponse\Sdk\Operation\Autoresponders\GetAutoresponders\GetAutoresponders
 use Getresponse\Sdk\Operation\Autoresponders\GetAutoresponders\GetAutorespondersSortParams;
 use Getresponse\Sdk\Operation\Campaigns\CreateCampaign\CreateCampaign;
 use Getresponse\Sdk\Operation\Contacts\CreateContact\CreateContact;
+use Getresponse\Sdk\Operation\Contacts\DeleteContact\DeleteContact;
+use Getresponse\Sdk\Operation\Contacts\DeleteContact\DeleteContactUrlQueryParameters;
 use Getresponse\Sdk\Operation\Contacts\GetContact\GetContact;
 use Getresponse\Sdk\Operation\Contacts\GetContact\GetContactFields;
 use Getresponse\Sdk\Operation\Contacts\GetContacts\GetContactsAdditionalFlags;
@@ -481,6 +483,29 @@ class GetResponse
 
         $updateContactOperation = new UpdateContact($updateContact, $contactId);
         return $client->call($updateContactOperation);
+    }
+
+    /**
+     * Delete a contact, given its id, with optional custom URL query parameters
+     *
+     * @param GetresponseClient $client Getresponse client instance, created by @newGetresponseClient()
+     * @param string $contactId Contact id, possibly fetched by @getContacts()
+     * @param DeleteContactUrlQueryParameters|null $queryParameters Optional URL query parameters
+     *
+     * @return OperationResponse Response object, it can be unpacked by @responseDataAsArray or @responseDataAsJSON
+     */
+    public function deleteContact(
+        GetresponseClient $client,
+        string $contactId,
+        DeleteContactUrlQueryParameters $queryParameters = null
+    ) {
+        $deleteContactOperation = new DeleteContact($contactId);
+
+        if ($queryParameters !== null) {
+            $deleteContactOperation->setUrlParameterQuery($queryParameters);
+        }
+
+        return $client->call($deleteContactOperation);
     }
 
     /**
