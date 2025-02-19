@@ -34,7 +34,6 @@ class GetResponseServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        AboutCommand::add('GetResponse', fn () => ['Version' => '0.2.0']);
         $this->publishResources();
     }
 
